@@ -79,6 +79,15 @@ async function run() {
                 const result = await classesCollection.updateOne(filter, updateDoc, options);
                 return res.send(result);
             }
+            if (updateClass?.feedback) {
+                updateDoc = {
+                    $set: {
+                        feedback: updateClass?.feedback,
+                    },
+                };
+                const result = await classesCollection.updateOne(filter, updateDoc, options);
+                return res.send(result);
+            }
             updateDoc = {
                 $set: {
                     availableSeats: updateClass?.availableSeats,
