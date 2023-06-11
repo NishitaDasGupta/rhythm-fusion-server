@@ -29,6 +29,7 @@ async function run() {
         const classesCollection = client.db("rhythmFusionDb").collection("classes");
         const instructorsCollection = client.db("rhythmFusionDb").collection("instructors");
         const usersCollection = client.db("rhythmFusionDb").collection("users");
+        const cartsCollection = client.db("rhythmFusionDb").collection("carts");
 
         // classesCollection
         app.get("/allclasses", async (req, res) => {
@@ -58,7 +59,6 @@ async function run() {
 
         app.post("/addclass", async (req, res) => {
             const classes = req.body;
-
             const result = await classesCollection.insertOne(classes);
             res.send(result);
         })
@@ -107,11 +107,14 @@ async function run() {
             res.send(result);
         })
 
+
         // usersCollection 
         app.get("/allusers", async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         })
+
+
 
         app.post("/users", async (req, res) => {
             const users = req.body;
@@ -139,6 +142,43 @@ async function run() {
             const result = await usersCollection.updateOne(filter, updateDoc, options);
             res.send(result);
         })
+
+
+        //cartscollection
+
+
+        app.get("/allcarts", async (req, res) => {
+            const result = await cartsCollection.find().toArray();
+            res.send(result);
+        })
+
+
+        app.get("/mycarts", async (req, res) => {
+            const myemail = req.query.studentEmail;
+            if (!myemail) {
+                return res
+                    .status(401)
+                    .send({ error: true, message: "Unauthorized access." })
+            }
+            const query = { studentEmail: myemail }
+            const result = await cartsCollection.find(query).toArray();
+            res.send(result);
+        })
+
+
+        app.post("/selectcart", async (req, res) => {
+            const carts = req.body;
+            const result = await cartsCollection.insertOne(carts);
+            res.send(result);
+        })
+
+        app.delete("/deletecart/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await cartsCollection.deleteOne(query);
+            res.send(result);
+        })
+
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
