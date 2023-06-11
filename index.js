@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.USER_SECRET_KEY}@cluster0.gvng5am.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -24,18 +24,96 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        //await client.connect();
 
         const classesCollection = client.db("rhythmFusionDb").collection("classes");
         const instructorsCollection = client.db("rhythmFusionDb").collection("instructors");
+        const usersCollection = client.db("rhythmFusionDb").collection("users");
 
-        app.get("/classes", async (req, res) => {
+        // classesCollection
+        app.get("/allclasses", async (req, res) => {
             const result = await classesCollection.find().toArray();
             res.send(result);
         })
 
+        app.get("/myclass", async (req, res) => {
+            const myemail = req.query.email;
+            //console.log(myemail);
+            if (!myemail) {
+                return res
+                    .status(401)
+                    .send({ error: true, message: "Unauthorized access." })
+            }
+            const query = { email: myemail }
+            const result = await classesCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        app.get("/findmyoneclass/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await classesCollection.findOne(query);
+            res.send(result);
+        })
+
+        app.post("/addclass", async (req, res) => {
+            const classes = req.body;
+            console.log(classes);
+            const result = await classesCollection.insertOne(classes);
+            res.send(result);
+        })
+
+        app.put("/updateclass/:id", async (req, res) => {
+            const id = req.params.id;
+            const updateClass = req.body;
+            console.log({ updateClass });
+            const filter = { _id: new ObjectId(id) };
+            const options = { upsert: true };
+            let updateDoc = {};
+            if (updateClass?.status) {
+                updateDoc = {
+                    $set: {
+                        status: updateClass?.status,
+                    },
+                };
+                const result = await classesCollection.updateOne(filter, updateDoc, options);
+                return res.send(result);
+            }
+            updateDoc = {
+                $set: {
+                    availableSeats: updateClass?.availableSeats,
+                    classImage: updateClass?.classImage,
+                    classNam: updateClass?.classNam,
+                    price: updateClass?.price,
+
+                },
+            };
+
+            const result = await classesCollection.updateOne(filter, updateDoc, options);
+            res.send(result);
+        })
+
+        // instructorsCollection
         app.get("/instructors", async (req, res) => {
             const result = await instructorsCollection.find().toArray();
+            res.send(result);
+        })
+
+        // usersCollection 
+        app.get("/allusers", async (req, res) => {
+            const result = await usersCollection.find().toArray();
+            res.send(result);
+        })
+
+        app.post("/users", async (req, res) => {
+            const users = req.body;
+            console.log(users);
+            const query = { email: users.email };
+            const existingEmail = await usersCollection.findOne(query);
+            if (existingEmail) {
+                return res.send({ error: "user already exists." })
+            }
+            const result = await usersCollection.insertOne(users);
             res.send(result);
         })
         // Send a ping to confirm a successful connection
