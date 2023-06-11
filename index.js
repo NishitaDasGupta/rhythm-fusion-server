@@ -38,7 +38,7 @@ async function run() {
 
         app.get("/myclass", async (req, res) => {
             const myemail = req.query.email;
-            //console.log(myemail);
+
             if (!myemail) {
                 return res
                     .status(401)
@@ -58,7 +58,7 @@ async function run() {
 
         app.post("/addclass", async (req, res) => {
             const classes = req.body;
-            console.log(classes);
+
             const result = await classesCollection.insertOne(classes);
             res.send(result);
         })
@@ -66,7 +66,6 @@ async function run() {
         app.put("/updateclass/:id", async (req, res) => {
             const id = req.params.id;
             const updateClass = req.body;
-            console.log({ updateClass });
             const filter = { _id: new ObjectId(id) };
             const options = { upsert: true };
             let updateDoc = {};
@@ -123,6 +122,21 @@ async function run() {
                 return res.send({ error: "user already exists." })
             }
             const result = await usersCollection.insertOne(users);
+            res.send(result);
+        })
+
+        app.put("/updateuser/:id", async (req, res) => {
+            const id = req.params.id;
+            const updateUser = req.body;
+            console.log(updateUser);
+            const filter = { _id: new ObjectId(id) };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    role: updateUser?.role,
+                },
+            };
+            const result = await usersCollection.updateOne(filter, updateDoc, options);
             res.send(result);
         })
         // Send a ping to confirm a successful connection
