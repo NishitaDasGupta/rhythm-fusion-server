@@ -3,10 +3,26 @@ const app = express();
 const cors = require("cors");
 const port = process.env.PORT || 5000;
 require('dotenv').config();
-
+const jwt = require('jsonwebtoken');
 // middleware 
 app.use(cors());
 app.use(express.json());
+
+// const verifyJWT = (req, res, next) => {
+//     const authorization = req.headers.authorization;
+//     if (!authorization) {
+//         return res.status(401).send({ error: true, message: "Unauthorized Access!" });
+//     }
+//     const token = authorization.split(' ')[1];
+//     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+//         if (err) {
+//             return res.status(401).send({ error: true, message: "Unauthorized Access!" });
+//         }
+//         req.decoded = decoded;
+//         next();
+//     })
+// }
+
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -31,6 +47,15 @@ async function run() {
         const usersCollection = client.db("rhythmFusionDb").collection("users");
         const cartsCollection = client.db("rhythmFusionDb").collection("carts");
 
+
+        // app.post('/jwt', (req, res) => {
+        //     const user = req.body;
+        //     // token e convert korbo  
+        //     const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+        //     res.send({ token });
+        // })
+
+
         // classesCollection
         app.get("/allclasses", async (req, res) => {
             const result = await classesCollection.find().toArray();
@@ -45,6 +70,13 @@ async function run() {
                     .status(401)
                     .send({ error: true, message: "Unauthorized access." })
             }
+
+            // const decodedEmail = req.decoded.email;
+            // if(myemail!== decodedEmail)
+            // {
+            //     return res.status(403).send({ error: true, message: "Providen Access!" });
+            // }
+
             const query = { email: myemail }
             const result = await classesCollection.find(query).toArray();
             res.send(result);
@@ -118,7 +150,7 @@ async function run() {
 
         app.post("/users", async (req, res) => {
             const users = req.body;
-            console.log(users);
+            // console.log(users);
             const query = { email: users.email };
             const existingEmail = await usersCollection.findOne(query);
             if (existingEmail) {
@@ -131,7 +163,7 @@ async function run() {
         app.put("/updateuser/:id", async (req, res) => {
             const id = req.params.id;
             const updateUser = req.body;
-            console.log(updateUser);
+            // console.log(updateUser);
             const filter = { _id: new ObjectId(id) };
             const options = { upsert: true };
             const updateDoc = {
@@ -160,6 +192,12 @@ async function run() {
                     .status(401)
                     .send({ error: true, message: "Unauthorized access." })
             }
+            // const decodedEmail = req.decoded.email;
+            // if(myemail!== decodedEmail)
+            // {
+            //     return res.status(403).send({ error: true, message: "Providen Access!" });
+            // }
+
             const query = { studentEmail: myemail }
             const result = await cartsCollection.find(query).toArray();
             res.send(result);
@@ -188,6 +226,8 @@ async function run() {
     }
 }
 run().catch(console.dir);
+
+
 
 app.get('/', (req, res) => {
     res.send("Rhythm Fusion Server is comming ....");
