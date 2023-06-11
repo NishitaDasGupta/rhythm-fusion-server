@@ -61,7 +61,7 @@ async function run() {
             console.log(classes);
             const result = await classesCollection.insertOne(classes);
             res.send(result);
-        })
+   
 
         app.put("/updateclass/:id", async (req, res) => {
             const id = req.params.id;
