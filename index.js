@@ -14,19 +14,22 @@ const verifyJWT = (req, res, next) => {
 
     if (!authorization) {
         return res.status(401)
-            .send({ error: true, message: "UNAUTHORIZED ACCESS MOU" })
+            .send({ error: true, message: "UNAUTHORIZED ACCESS " })
     }
     const token = authorization.split(' ')[1];
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
         if (err) {
             return res.status(401)
-                .send({ error: true, message: "UNAUTHORIZED ACCESS SOIKAT" })
+                .send({ error: true, message: "UNAUTHORIZED ACCESS " })
         }
         req.decoded = decoded;
         next();
     })
 }
+
+
+
 
 
 
@@ -61,12 +64,24 @@ async function run() {
         })
 
 
+        // Warning: use verifyJWT before using verifyAdmin
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            if (user?.role !== 'Admin') {
+                return res.status(403).send({ error: true, message: 'forbidden message' });
+            }
+            next();
+        }
+
+
         // classesCollection
         app.get("/allclasses", async (req, res) => {
             const result = await classesCollection.find().toArray();
             res.send(result);
         })
-
+        //instructor
         app.get("/myclass", verifyJWT, async (req, res) => {
             const myemail = req.query.email;
 
@@ -146,42 +161,42 @@ async function run() {
 
 
         // usersCollection 
-        app.get("/allusers", verifyJWT, async (req, res) => {
+        app.get("/allusers", verifyJWT,verifyAdmin, async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         })
 
 
-        app.get("/user/admin/:email",verifyJWT, async (req, res) => {
+        app.get("/user/admin/:email", verifyJWT, async (req, res) => {
             const email = req.params.email;
             if (email !== req.decoded.email) {
-                return res.send({ admin:false })
+                return res.send({ admin: false })
             }
-            const query = {email : email};
+            const query = { email: email };
             const user = await usersCollection.findOne(query);
-            const result = {admin: user?.role==="Admin"}
+            const result = { admin: user?.role === "Admin" }
             res.send(result);
         })
 
-        app.get("/user/instructor/:email",verifyJWT, async (req, res) => {
+        app.get("/user/instructor/:email", verifyJWT, async (req, res) => {
             const email = req.params.email;
             if (email !== req.decoded.email) {
-                return res.send({ instructor:false })
+                return res.send({ instructor: false })
             }
-            const query = {email : email};
+            const query = { email: email };
             const user = await usersCollection.findOne(query);
-            const result = {instructor: user?.role==="Instructor"}
+            const result = { instructor: user?.role === "Instructor" }
             res.send(result);
         })
 
-        app.get("/user/student/:email",verifyJWT, async (req, res) => {
+        app.get("/user/student/:email", verifyJWT, async (req, res) => {
             const email = req.params.email;
             if (email !== req.decoded.email) {
-                return res.send({ student:false })
+                return res.send({ student: false })
             }
-            const query = {email : email};
+            const query = { email: email };
             const user = await usersCollection.findOne(query);
-            const result = {student: user?.role==="Student"}
+            const result = { student: user?.role === "Student" }
             res.send(result);
         })
 
