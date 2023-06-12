@@ -8,20 +8,25 @@ const jwt = require('jsonwebtoken');
 app.use(cors());
 app.use(express.json());
 
-// const verifyJWT = (req, res, next) => {
-//     const authorization = req.headers.authorization;
-//     if (!authorization) {
-//         return res.status(401).send({ error: true, message: "Unauthorized Access!" });
-//     }
-//     const token = authorization.split(' ')[1];
-//     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-//         if (err) {
-//             return res.status(401).send({ error: true, message: "Unauthorized Access!" });
-//         }
-//         req.decoded = decoded;
-//         next();
-//     })
-// }
+
+const verifyJWT = (req, res, next) => {
+    const authorization = req.headers.authorization;
+
+    if (!authorization) {
+        return res.status(401)
+            .send({ error: true, message: "UNAUTHORIZED ACCESS MOU" })
+    }
+    const token = authorization.split(' ')[1];
+
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401)
+                .send({ error: true, message: "UNAUTHORIZED ACCESS SOIKAT" })
+        }
+        req.decoded = decoded;
+        next();
+    })
+}
 
 
 
@@ -48,12 +53,12 @@ async function run() {
         const cartsCollection = client.db("rhythmFusionDb").collection("carts");
 
 
-        // app.post('/jwt', (req, res) => {
-        //     const user = req.body;
-        //     // token e convert korbo  
-        //     const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
-        //     res.send({ token });
-        // })
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            // token e convert korbo  
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+            res.send({ token });
+        })
 
 
         // classesCollection
@@ -62,7 +67,7 @@ async function run() {
             res.send(result);
         })
 
-        app.get("/myclass", async (req, res) => {
+        app.get("/myclass", verifyJWT, async (req, res) => {
             const myemail = req.query.email;
 
             if (!myemail) {
@@ -71,11 +76,11 @@ async function run() {
                     .send({ error: true, message: "Unauthorized access." })
             }
 
-            // const decodedEmail = req.decoded.email;
-            // if(myemail!== decodedEmail)
-            // {
-            //     return res.status(403).send({ error: true, message: "Providen Access!" });
-            // }
+            if (myemail !== req.decoded.email) {
+                return res.status(403)
+                    .send({ error: true, message: "Forbidden Access" })
+            }
+
 
             const query = { email: myemail }
             const result = await classesCollection.find(query).toArray();
@@ -141,11 +146,44 @@ async function run() {
 
 
         // usersCollection 
-        app.get("/allusers", async (req, res) => {
+        app.get("/allusers", verifyJWT, async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         })
 
+
+        app.get("/user/admin/:email",verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            if (email !== req.decoded.email) {
+                return res.send({ admin:false })
+            }
+            const query = {email : email};
+            const user = await usersCollection.findOne(query);
+            const result = {admin: user?.role==="Admin"}
+            res.send(result);
+        })
+
+        app.get("/user/instructor/:email",verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            if (email !== req.decoded.email) {
+                return res.send({ instructor:false })
+            }
+            const query = {email : email};
+            const user = await usersCollection.findOne(query);
+            const result = {instructor: user?.role==="Instructor"}
+            res.send(result);
+        })
+
+        app.get("/user/student/:email",verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            if (email !== req.decoded.email) {
+                return res.send({ student:false })
+            }
+            const query = {email : email};
+            const user = await usersCollection.findOne(query);
+            const result = {student: user?.role==="Student"}
+            res.send(result);
+        })
 
 
         app.post("/users", async (req, res) => {
@@ -160,7 +198,8 @@ async function run() {
             res.send(result);
         })
 
-        app.put("/updateuser/:id", async (req, res) => {
+
+        app.put(`/updateuser/:id`, async (req, res) => {
             const id = req.params.id;
             const updateUser = req.body;
             // console.log(updateUser);
@@ -176,27 +215,27 @@ async function run() {
         })
 
 
+
         //cartscollection
 
 
-        app.get("/allcarts", async (req, res) => {
+        app.get("/allcarts", verifyJWT, async (req, res) => {
             const result = await cartsCollection.find().toArray();
             res.send(result);
         })
 
 
-        app.get("/mycarts", async (req, res) => {
+        app.get("/mycarts", verifyJWT, async (req, res) => {
             const myemail = req.query.studentEmail;
             if (!myemail) {
                 return res
                     .status(401)
                     .send({ error: true, message: "Unauthorized access." })
             }
-            // const decodedEmail = req.decoded.email;
-            // if(myemail!== decodedEmail)
-            // {
-            //     return res.status(403).send({ error: true, message: "Providen Access!" });
-            // }
+            if (myemail !== req.decoded.email) {
+                return res.status(403)
+                    .send({ error: true, message: "Forbidden Access" })
+            }
 
             const query = { studentEmail: myemail }
             const result = await cartsCollection.find(query).toArray();
